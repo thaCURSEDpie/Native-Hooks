@@ -1,3 +1,15 @@
+////////////////////////////////////////////////////////////////
+//		File name:  Main.cpp
+//		Part of:    Native-Hooks
+//		Author:		Aru
+//		Date:		Unknown
+//
+//		Description:
+//		This is the DLL main, which registers the custom thread
+//		when the module is loaded by GTA.
+//
+////////////////////////////////////////////////////////////////
+
 #include <windows.h>
 
 #include "Script.h"

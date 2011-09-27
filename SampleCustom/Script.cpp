@@ -1,3 +1,16 @@
+////////////////////////////////////////////////////////////////
+//		File name:  Script.cpp
+//		Part of:    Native-Hooks
+//		Author:		thaCURSEDpie
+//		Date:		September 2011
+//
+//		Description:
+//		This source file contains the script part of the project.
+//		The script is used to initialize the native hooks
+//		(which is done by calling the 'CreateBaseHooks' function)
+//
+////////////////////////////////////////////////////////////////
+
 #include "Script.h"
 
 #include "HookSetup.h"
@@ -21,39 +34,14 @@ CustomThread::CustomThread()
 
 bool startup = true;
 
-int a2;
-float b2, c2, d2;
-int* e2;
-bool f2;
-
-void PREP_CREATE_CAR(int a, float b, float c, float d, int *e, bool f)
-{
-	a2 = a;
-	b2 = b;
-	c2 = c;
-	d2 = d;
-	e2 = e;
-	f2 = f;
-}
-
-Scripting::eModel carModel;
-bool spawnCar = false;
-
 void CustomThread::RunTick()
 {
 	// Tick
 	if (startup)
 	{
-		Log::Info(" startup\n");
+		Log::Debug(" startup\n");
 		startup = false;	
 		
 		CreateBaseHooks();		
 	}
-}
-
-int CreateCarCallback(int* carHash, float* X, float* Y, float* Z, int** handle , bool* unk, int previousChanges)
-{
-	Log::Info("car callback!\n");
-	*carHash = MODEL_BANSHEE;
-	return 1;
 }

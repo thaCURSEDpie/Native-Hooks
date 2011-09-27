@@ -1,3 +1,17 @@
+////////////////////////////////////////////////////////////////
+//		File name:  Script.h
+//		Part of:    Native-Hooks
+//		Author:		Aru
+//		Date:		Unknown
+//
+//		Description:
+//		This is the header file for the Script.cpp source
+//		file.
+//
+//		It contains the CustomThread class, which inherits
+//		ScriptThread.
+//
+////////////////////////////////////////////////////////////////
 #pragma once
 
 #include "../ScriptHook/ScriptThread.h"
@@ -14,5 +28,3 @@ protected:
 public:
 	CustomThread();
 };
-
-int CreateCarCallback(int* carHash, float* X, float* Y, float* Z, int** handle , bool* unk, int previousChanges);

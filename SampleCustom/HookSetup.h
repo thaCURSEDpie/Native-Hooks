@@ -1,14 +1,26 @@
+////////////////////////////////////////////////////////////////
+//		File name:  HookSetup.h
+//		Part of:    Native-Hooks
+//		Author:		thaCURSEDpie
+//		Date:		September 2011
+//
+//		Description:
+//		This is the header file for the 'HookSetup.cpp' source
+//		file.
+//
+////////////////////////////////////////////////////////////////
 #pragma once
 
 #include "Scripting.h"
 #include "../ScriptHook/Log.h"
-#include "HookObjects.h"
 #include "NativeContextEditable.h"
 
 #include <windows.h>
 
 namespace NativeHooks
 {
+	typedef void (_cdecl *NativeCall)(GameTypes::scrNativeCallContext *cxt);
+
 	////////////////////////////////////////////////////////////////
 	//		Native callback prototypes
 	//			note:	these have one parameter more than the
@@ -28,6 +40,7 @@ namespace NativeHooks
 	//			they handle the client callbacks
 	////////////////////////////////////////////////////////////////
 	void NI_CREATE_CAR(NativeContextEditable *cxt);
+	void NI_GENERAL(GameTypes::scrNativeCallContext *cxt);
 
 	////////////////////////////////////////////////////////////////
 	//		Hook requests
@@ -68,4 +81,7 @@ namespace NativeHooks
 	//		a bool representing if the hook is enabled or not
 	////////////////////////////////////////////////////////////////
 	bool IsHookEnabled(Scripting::NativeHashes type);
+
+	// Not used
+	u32* getParamAddress();
 }

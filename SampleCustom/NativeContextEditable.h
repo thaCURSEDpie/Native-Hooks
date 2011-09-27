@@ -1,3 +1,16 @@
+////////////////////////////////////////////////////////////////
+//		File name:  NativeContextEditable.h
+//		Part of:    Native-Hooks
+//		Author:		thaCURSEDpie
+//		Date:		September 2011
+//
+//		Description:
+//		This header file describes the 'NativeContextEditable'
+//		class, a class which inherits GameTypes::scrNativeCallContext
+//		and is used to alter the parameter of native functions
+//		upon hooking.
+//
+////////////////////////////////////////////////////////////////
 #pragma once
 
 #include "../ScriptHook/NativeContext.h"
@@ -24,7 +37,7 @@ namespace NativeHooks
 	//
 	//			Use with caution please :).
 	////////////////////////////////////////////////////////////////
-	class NativeContextEditable : public NativeContext
+	class NativeContextEditable : public GameTypes::scrNativeCallContext
 	{
 	private:
 		enum
@@ -40,13 +53,15 @@ namespace NativeHooks
 		//			(you should never
 		//			have to call this)
 		////////////////////////////////////////////////////////////////
-		NativeContextEditable()
+		__forceinline NativeContextEditable()
 		{		
 		}
-
+		
 		////////////////////////////////////////////////////////////////
 		//		SetArgValue
 		//		
+		//		Is very likely the cause of crashes. Beware!
+		//
 		//			Params:
 		//		T:			type of your variable
 		//		argIndex:	index of the argument to change
@@ -58,23 +73,31 @@ namespace NativeHooks
 		//		1:			Argument type too large
 		////////////////////////////////////////////////////////////////
 		template <typename T>
+		__declspec(deprecated("This function is very likely the cause of crashes. Beware! Do NOT use this function in it's current state for anything other than testing purposes.")) 
 		__forceinline int SetArgValue(u32 argIndex, T value)
 		{
 			if (sizeof(T) > this->argSize)
 			{
 				// Error code 1: argument size too large
 				return 1;
-			}
+			}			
 			else if (sizeof(T) < this->argSize)
 			{
-				// Ensure we don't have any stray data
-				*ptr_cast<u32>((u8*)this->m_pArgs + this->argSize * argIndex) = 0;
-			}
+				// Create byte stack
+				u8* stack = (u8*)this->m_pArgs;
 
-			*ptr_cast<T>((u8*)this->m_pArgs + this->argSize * argIndex) = value;
+				// First patch in padding
+				u32 padding = 0;
+				memcpy(&stack[argIndex], &padding, this->argSize);
+
+				// Patch in new value
+				memcpy(&stack[argIndex], &value, sizeof(T));
+				return 0;
+			}
 
 			return 0;
 		}
+		
 
 		////////////////////////////////////////////////////////////////
 		//		GetArgValue
@@ -118,6 +141,7 @@ namespace NativeHooks
 				T tempT;
 
 				u8* stack = (u8*)this->m_pArgs;
+
 				memcpy(&tempT, &stack[argIndex], sizeof(T));
 
 				*ret = tempT;
@@ -126,17 +150,17 @@ namespace NativeHooks
 			}
 		}
 
-		size_t GetArgSize()
+		__forceinline size_t GetArgSize()
 		{
 			return this->argSize;
 		}
 
-		u32 GetArgCount()
+		__forceinline u32 GetArgCount()
 		{
 			return this->m_nArgCount;
 		}
 
-		u32 GetDataCount()
+		__forceinline u32 GetDataCount()
 		{
 			return this->m_nDataCount;
 		}

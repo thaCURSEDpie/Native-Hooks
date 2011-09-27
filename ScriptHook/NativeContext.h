@@ -53,7 +53,7 @@ public:
             // Ensure we don't have any stray data
             *ptr_cast<u32>(m_TempStack + ArgSize * m_nArgCount) = 0;
         }
-
+		
         *ptr_cast<T>(m_TempStack + ArgSize * m_nArgCount) = value;
         m_nArgCount++;
     }
