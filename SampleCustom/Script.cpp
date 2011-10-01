@@ -25,6 +25,7 @@
 using namespace Scripting;
 using namespace NativeHooks;
 
+void CreateCarHook(NativeContextEditable* cxt);
 
 CustomThread::CustomThread()
 {
@@ -42,6 +43,13 @@ void CustomThread::RunTick()
 		Log::Debug(" startup\n");
 		startup = false;	
 		
-		CreateBaseHooks();		
+		CreateBaseHooks();	
+
+		RegisterHook(NATIVE_CREATE_CAR, CreateCarHook);
 	}
+}
+
+void CreateCarHook(NativeContextEditable* cxt)
+{
+	PrintTxt("STRING", "HOOKED :)", 1800, true);
 }

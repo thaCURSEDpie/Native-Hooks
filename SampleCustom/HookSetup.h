@@ -34,6 +34,8 @@ namespace NativeHooks
 	////////////////////////////////////////////////////////////////
 	typedef int (*NCB_CREATE_CAR)(int*, float*, float*, float*, int**, bool*, int);
 
+	typedef void (REGISTERED_HOOK)(NativeContextEditable *cxt);
+
 	////////////////////////////////////////////////////////////////
 	//		Native intermediates
 	//			this is where the natives are rerouted to,
@@ -41,6 +43,7 @@ namespace NativeHooks
 	////////////////////////////////////////////////////////////////
 	void NI_CREATE_CAR(NativeContextEditable *cxt);
 	void NI_GENERAL(GameTypes::scrNativeCallContext *cxt);
+
 
 	////////////////////////////////////////////////////////////////
 	//		Hook requests
@@ -82,6 +85,8 @@ namespace NativeHooks
 	////////////////////////////////////////////////////////////////
 	bool IsHookEnabled(Scripting::NativeHashes type);
 
-	// Not used
-	u32* getParamAddress();
+
+	int RegisterHook(Scripting::NativeHashes type, REGISTERED_HOOK* callback);
+
+	void CreateHook(Scripting::NativeHashes type);
 }

@@ -92,10 +92,11 @@ namespace NativeHooks
 	protected:
 		Scripting::NativeHashes type;
 
-		void* detourAddr;
 		void* funcAddr;
-		void** callbacks;
-		void** postHooks;
+		void* thisDetourAddr;
+		void* thisAddr;
+
+		REGISTERED_HOOK** regHooks;
 
 		BYTE* oldBytes;
 		BYTE* newBytes;
@@ -103,17 +104,21 @@ namespace NativeHooks
 
 		enum
 		{
-			patchSize = 6,
+			patchSize = 11,
 			newProt = PAGE_EXECUTE_READWRITE,
 		};
 
 		bool isActivated;		
-		int numCallbacks;
-		int numPosthooks;	
+		int numRegisteredHooks;
 
-		void nativeIntermediate(GameTypes::scrNativeCallContext* cxt)
+		void nativeIntermediate(NativeContextEditable* cxt)
 		{
-			Log::Info("hooked native %u", this->type);
+			Log::Debug("hooked native 0x%x", this->type);
+
+			for (int i = 0; i < this->numRegisteredHooks; i++)
+			{
+				regHooks[i](cxt);
+			}
 
 			this->DeActivate();
 
@@ -133,34 +138,9 @@ namespace NativeHooks
 			return this->type;
 		}
 
-		void* DetourAddress()
-		{
-			return this->detourAddr;
-		}
-
 		void* FunctionAddress()
 		{
 			return this->funcAddr;
-		}
-
-		void** CallbackFunctions()
-		{
-			return this->callbacks;
-		}
-
-		void** PostHooks()
-		{
-			return this->postHooks;
-		}
-
-		int GetNumCallbacks()
-		{
-			return this->numCallbacks;
-		}
-
-		int GetNumPostHooks()
-		{
-			return this->numPosthooks;
 		}
 
 		bool IsActivated()
@@ -171,18 +151,13 @@ namespace NativeHooks
 		////////////////////////////////
 		//		Constructor
 		////////////////////////////////
-		BaseHook(Scripting::NativeHashes hash, void* hookFunc)
+		BaseHook(Scripting::NativeHashes hash)
 		{
-			this->callbacks = new void*[50];
+			this->numRegisteredHooks = 0;
+			this->regHooks = new REGISTERED_HOOK*[50];
 
 			this->funcAddr = Game::GetNativeAddressFromHash(hash);
-
-			// char* str = new char[100];
-			// sprintf(str, "0x%x", this->funcAddr);
-			// MessageBoxA(NULL, str, "Native address:", 0);
-
-			this->detourAddr = hookFunc;
-			
+		
 			this->isActivated = false;
 			this->type = hash;
 			this->oldBytes = new BYTE[patchSize];
@@ -191,52 +166,41 @@ namespace NativeHooks
 			this->newBytes[0]= 0xE9;																					// JMP
 			this->newBytes[1] = 0x90; this->newBytes[2] = 0x90; this->newBytes[3] = 0x90; this->newBytes[4] = 0x90;		// <offset>
 			this->newBytes[5] = 0xC3;																					// RET
-							  
+					
+			// We get the pointer to the BaseHook::nativeIntermediate function:
+			this->thisDetourAddr = NULL;
 
-			//////////////
-			// UNUSED
-			//////////////
-			// Our patch
-			//  We store the native type in a global variable (see HookSetup.cpp),
-			//  so we know what native called our hook function.
-			/*
-			BYTE patch[] = {0xC7, 0x05,			         // MOV [target], <data>
-							0x90, 0x90, 0x90, 0x90,		 // [target]
-							0x90, 0x90, 0x90, 0x90,		 // <data>
-							0xE9,					     // JMP
-							0x90, 0x90, 0x90, 0x90,	     // <offset>
-							0xC3};					     // RET
+			void (BaseHook::*addr)() = (void (BaseHook::*)())&BaseHook::nativeIntermediate;
 			
-			// We patch in the address where we will store the native-type
-			u32* paramAddr = getParamAddress();
-			memcpy(&patch[2], &paramAddr, 4);
+			void* tempVoid = NULL;
 
-			// We patch in the native type to store in the address
-			u32 nativeType = (u32)this->type;
-			memcpy(&patch[6], &nativeType, 4);
+			// We get our address
+			__asm
+			{
+					push eax;						// backup eax
+					mov eax,addr;					// copy the address of myClass::test into eax
+					mov tempVoid,eax;				// copy the value of eax into testFunc
+					pop eax;						// restore eax
+			}
+
+			this->thisDetourAddr = tempVoid;
+
+			// Our jump-patch
+			BYTE patch[] = {0xB9,						// MOV ecx, <value>
+							0x90, 0x90, 0x90, 0x90,		// <value>
+							0xE9,						// JMP <offset>
+							0x90, 0x90, 0x90, 0x90,		// <offset>
+							0xC3};						// RET
+
+			// We patch in the class instance
+			void* myAddr = this;
+			memcpy(&patch[1], &myAddr, 4);
 
 			// We patch in the jump offset
-			DWORD jumpOffset = (DWORD)hookFunc - (DWORD)this->funcAddr - 15;
-			memcpy(&patch[11], &jumpOffset, 4);
-			
-
-			BYTE patch[] = {0xB8,				         // MOV EAX, <data>
-							0x90, 0x90, 0x90, 0x90,		 // <data>
-							0xE9,					     // JMP
-							0x90, 0x90, 0x90, 0x90,	     // <offset>
-							0xC3};					     // RET
-
-			// We patch in the native type to store in the address
-			u32 nativeType = (u32)this->type;
-			memcpy(&patch[1], &nativeType, 4);
-
-			// We patch in the jump offset
-			DWORD jumpOffset = (DWORD)hookFunc - (DWORD)this->funcAddr - 10;
+			DWORD jumpOffset = (DWORD)this->thisDetourAddr - (DWORD)this->funcAddr - 10;
 			memcpy(&patch[6], &jumpOffset, 4);
-
-			*/
 			
-			DWORD jumpSize = ((DWORD)(hookFunc) - (DWORD)this->funcAddr - 5);
+			// DWORD jumpSize = ((DWORD)(hookFunc) - (DWORD)this->funcAddr - 5);
 
 			// get access
 			BOOL prot = VirtualProtect(this->funcAddr, this->patchSize, this->newProt, &this->oldProt);
@@ -245,10 +209,13 @@ namespace NativeHooks
 			memcpy(this->oldBytes, this->funcAddr, this->patchSize);
 
 			// set jump size in patch
-			memcpy(&this->newBytes[1], &jumpSize, 4);				
+			// memcpy(&this->newBytes[1], &jumpSize, 4);				
 
 			// restore protection
 			VirtualProtect(this->funcAddr, this->patchSize, this->oldProt, NULL);
+
+			// Our testing patch
+			memcpy(this->newBytes, patch, this->patchSize);
 		}
 
 		////////////////////////////////
@@ -292,46 +259,10 @@ namespace NativeHooks
 			this->isActivated = false;
 		}	
 
-		void AddPostHook(void* function)
+		void RegisterHook(REGISTERED_HOOK* fnPtr)
 		{
-			int arraySize = sizeof(this->postHooks) / sizeof(void*);
-
-			// We have enough room
-			if (numPosthooks < arraySize)
-			{
-				this->postHooks[this->numPosthooks++] = function;				
-			}
-			else
-			{
-				void** tmp = new void*[arraySize];
-				tmp = this->callbacks;
-
-				this->postHooks = new void*[(int)(arraySize * 1.5)];
-				memcpy(this->callbacks, tmp, arraySize);
-
-				this->postHooks[this->numPosthooks++] = function;
-			}
-		}
-
-		void AddCallback(void* function)
-		{
-			int arraySize = sizeof(this->callbacks) / sizeof(void*);
-
-			// We have enough room
-			if (numCallbacks < arraySize)
-			{
-				callbacks[numCallbacks++] = function;				
-			}
-			else
-			{
-				void** tmp = new void*[arraySize];
-				tmp = this->callbacks;
-
-				callbacks = new void*[(int)(arraySize * 1.5)];
-				memcpy(this->callbacks, tmp, arraySize);
-
-				callbacks[numCallbacks++] = function;
-			}
+			// TODO: add bounds checking
+			this->regHooks[this->numRegisteredHooks++] = fnPtr;
 		}
 	};	
 }
