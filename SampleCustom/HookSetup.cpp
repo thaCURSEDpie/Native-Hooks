@@ -43,7 +43,7 @@ namespace NativeHooks
 			
 	void CreateBaseHooks()
 	{
-		baseHooks = new BaseHook*[200];
+		baseHooks = new BaseHook*[1];
 
 		Log::Debug("Create base hooks :)\n");		
 		baseHooks[numBaseHooks++] = new BaseHook(NATIVE_CREATE_CAR);

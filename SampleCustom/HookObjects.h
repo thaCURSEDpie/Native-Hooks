@@ -111,7 +111,7 @@ namespace NativeHooks
 		bool isActivated;		
 		int numRegisteredHooks;
 
-		void nativeIntermediate(NativeContextEditable* cxt)
+		void nativeIntermediate(NativeContext* cxt) //NativeContextEditable* cxt)
 		{
 			Log::Debug("hooked native 0x%x", this->type);
 
@@ -120,12 +120,19 @@ namespace NativeHooks
 				regHooks[i](cxt);
 			}
 
+			Log::Debug("Deactivating...");
 			this->DeActivate();
 
+			Log::Debug("Setting up call...");
 			NativeCall call = (NativeCall)this->FunctionAddress();
+
+			Log::Debug("Calling native");
 			call(cxt);
 
+			Log::Debug("Activating...");
 			this->Activate();
+
+			Log::Debug("Done.");
 		}
 
 	public:

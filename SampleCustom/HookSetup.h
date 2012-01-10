@@ -34,7 +34,7 @@ namespace NativeHooks
 	////////////////////////////////////////////////////////////////
 	typedef int (*NCB_CREATE_CAR)(int*, float*, float*, float*, int**, bool*, int);
 
-	typedef void (REGISTERED_HOOK)(NativeContextEditable *cxt);
+	typedef void (REGISTERED_HOOK)(NativeContext *cxt); //Editable *cxt);
 
 	////////////////////////////////////////////////////////////////
 	//		Native intermediates
